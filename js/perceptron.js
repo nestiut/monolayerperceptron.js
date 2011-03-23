@@ -1,12 +1,14 @@
 // Helpers
 
 var log = (function(d) {
-    var o = d.getElementById('assert'); 
-    return function(c) {
-        var li = d.createElement('li');
-        li.className = 'log';
-        li.appendChild(d.createTextNode(c));
-        o.appendChild(li);
+    var o = d.getElementById('assert');
+    return function() {
+        [].slice.call(arguments).map(function(c) {
+            var li = d.createElement('li');
+            li.className = 'log';
+            li.appendChild(d.createTextNode(c));
+            o.appendChild(li);
+        });
     }; 
 })(document);
 
@@ -38,7 +40,7 @@ var Neuron = function(weights, threshold, learnRate) {
         this.weights.push(this.biasWeight); 
         
         // Callback
-        typeof callback === "undefined" || callback(this.weights, this.nbInputs);
+        typeof callback === "undefined" || callback(this.weights);
         
         // Chaining
         return this;
@@ -58,7 +60,7 @@ var Neuron = function(weights, threshold, learnRate) {
         weightedSum += this.bias * this.biasWeight;
         
         // Callback
-        typeof callback === "undefined" || callback(inputs, weightedSum);
+        typeof callback === "undefined" || callback(weightedSum);
         
         // Convert 'true' to 1, and 'false' to 0
         return ![]+ (weightedSum >= this.threshold);
@@ -86,6 +88,7 @@ var Neuron = function(weights, threshold, learnRate) {
 // Network test
 
 var sample = [
+        // Wrong side
         [[-2, -3], 0],
         [[-1, -1], 0],
         [[-1, 0], 0],
@@ -94,6 +97,9 @@ var sample = [
         [[0, 2], 0],
         [[1, 3], 0],
         [[2, 5], 0],
+        [[-2, 5], 0],
+        // Right side
+        [[3, -4], 1],
         [[-2, -5], 1],
         [[-1, -3], 1],
         [[0, -1], 1],
@@ -105,8 +111,8 @@ var sample = [
     test = [-5, 5],
     neuron = new Neuron().learn(sample);
 
-var output = neuron.send(test, log);
-log('Output : ' + output);
+var output = neuron.send(test);
+log('Is ' + test + ' on the right side? ' + !!output);
 
 
 // Canvas graph
@@ -129,7 +135,7 @@ ctx.stroke();
 
 // Samples
 for(var i = 0, len = sample.length; i < len; i++) {
-    ctx.fillStyle = sample[i][1] === 1 ? "#FF1C0A" : "#00A308";
+    ctx.fillStyle = sample[i][1] !== 1 ? "#FF1C0A" : "#00A308";
     ctx.beginPath();
     ctx.arc((sample[i][0][0]+20)*10, (sample[i][0][1]+20)*10, 1, 0, Math.PI*2, true); 
     ctx.closePath();
@@ -137,7 +143,7 @@ for(var i = 0, len = sample.length; i < len; i++) {
 }
 
 // Test
-ctx.fillStyle = output === 1 ? "#FF1C0A" : "#00A308";
+ctx.fillStyle = output !== 1 ? "#FF1C0A" : "#00A308";
 ctx.beginPath();
 ctx.arc((test[0] +20)*10, (test[1] +20)*10, 2, 0, Math.PI*2, true); 
 ctx.closePath();
