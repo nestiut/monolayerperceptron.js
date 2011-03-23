@@ -1,16 +1,16 @@
+// Helpers
+
 var log = (function(d) {
-    var output = d.getElementById('assert'); 
-    
-    return function(content) {
+    var o = d.getElementById('assert'); 
+    return function(c) {
         var li = d.createElement('li');
         li.className = 'log';
-        li.appendChild( d.createTextNode( content ) );
-    
-        output.appendChild(li);
+        li.appendChild(d.createTextNode(c));
+        o.appendChild(li);
     }; 
 })(document);
 
-
+// Core
 
 var Neuron = function(weights, threshold, learnRate) {
     this.weights      = weights || [];
@@ -23,20 +23,19 @@ var Neuron = function(weights, threshold, learnRate) {
         return 1/ (1 - Math.exp(-1 * x));
     };
     
-    this.init = function(nb, callback) {
-        if( this.weights.length == 0) {
-            this.initWeights(nb, callback);
-        }
-    };
     
-    this.initWeights = function(nbInputs, callback) {
-        if( this.weights.length == 0 ) {
-            for( var i = 0; i < nbInputs; i++ ) {
+    this.init = function(nbInputs, callback) {
+        if(this.weights.length !== 0) {
+            return;
+        }
+        
+        if(this.weights.length === 0) {
+            for(var i = 0; i < nbInputs; i++) {
                 this.weights[i] = parseInt( ( Math.random() * 100 ) / 10 );
             }    
         }
         this.nbInputs = nbInputs;
-        this.weights.push( this.biasWeight ); 
+        this.weights.push(this.biasWeight); 
         
         // Callback
         typeof callback === "undefined" || callback(this.weights, this.nbInputs);
@@ -45,6 +44,7 @@ var Neuron = function(weights, threshold, learnRate) {
         return this;
     };
     
+    
     this.send = function(inputs, callback) {
         this.init(inputs.length);
         
@@ -52,7 +52,7 @@ var Neuron = function(weights, threshold, learnRate) {
         
         // Weighted sum of inputs
         var weightedSum = 0;
-        for( var i = 0; i < inputs.length; i++) {
+        for(var i = 0; i < inputs.length; i++) {
             weightedSum += inputs[i] * this.weights[i];
         }
         weightedSum += this.bias * this.biasWeight;
@@ -60,18 +60,20 @@ var Neuron = function(weights, threshold, learnRate) {
         // Callback
         typeof callback === "undefined" || callback(inputs, weightedSum);
         
-        return weightedSum >= this.threshold ? 1 : 0;
-        // return Math.round( this.sigmoid(weightedSum) );
+        // Convert 'true' to 1, and 'false' to 0
+        return ![]+ (weightedSum >= this.threshold);
+        // return Math.round(this.sigmoid(weightedSum));
     };
+    
     
     this.learn = function(data) {
         this.init(data[0][0].length);
         
-        for ( var i = 0; i < data.length; i++ ) {
+        for (var i = 0; i < data.length; i++) {
             currentOutput = this.send(data[i][0]);
             providedOutput = data[i][1];
             
-            for( var j = 0; j < this.nbInputs; j++) {
+            for(var j = 0; j < this.nbInputs; j++) {
                 this.weights[j] += this.learnRate * (providedOutput - currentOutput) * data[i][0][j];
                 this.biasWeight = this.biasWeight + (providedOutput - currentOutput);
             }
@@ -82,6 +84,7 @@ var Neuron = function(weights, threshold, learnRate) {
 };
 
 // Network test
+
 var sample = [
         [[-2, -3], 0],
         [[-1, -1], 0],
@@ -103,7 +106,7 @@ var sample = [
     neuron = new Neuron().learn(sample);
 
 var output = neuron.send(test, log);
-log( 'Output : ' + output );
+log('Output : ' + output);
 
 
 // Canvas graph
