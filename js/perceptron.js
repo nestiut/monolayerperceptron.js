@@ -15,8 +15,14 @@ var log = (function(d) {
 // Core
 
 var Neuron = function(weights, threshold, learnRate) {
+    // Force new instance
+    if(!(this instanceof arguments.callee)) {
+        return new arguments.callee(arguments); 
+    }
+    
+    
     this.weights      = weights || [];
-    this.threshold    = threshold || 0;
+    this.threshold    = threshold || 0.5;
     this.learnRate    = learnRate || 0.5;
     this.bias         = 1;
     this.biasWeight   = 1;
@@ -62,9 +68,9 @@ var Neuron = function(weights, threshold, learnRate) {
         // Callback
         typeof callback === "undefined" || callback(weightedSum);
         
-        // Convert 'true' to 1, and 'false' to 0
-        return ![]+ (weightedSum >= this.threshold);
-        // return Math.round(this.sigmoid(weightedSum));
+        // ![]+ Convert 'true' to 1, and 'false' to 0
+        // return ![]+ (weightedSum >= this.threshold);
+        return ![]+ (this.sigmoid(weightedSum) >= this.threshold);
     };
     
     
@@ -108,7 +114,7 @@ var sample = [
         [[2, 3], 1],
         [[2, 1], 1],
     ],
-    test = [-5, 5],
+    test = [5, -5],
     neuron = new Neuron().learn(sample);
 
 var output = neuron.send(test);
@@ -148,3 +154,29 @@ ctx.beginPath();
 ctx.arc((test[0] +20)*10, (test[1] +20)*10, 2, 0, Math.PI*2, true); 
 ctx.closePath();
 ctx.fill();
+
+// Logical OR
+
+var sample = [
+        [[0, 0], 0],
+        [[0, 1], 1],
+        [[1, 0], 1],
+    ],
+    test = [1, 1],
+    neuron = new Neuron().learn(sample);
+
+var output = neuron.send(test);
+log(test[0] + ' OR ' + test[1] + ' = ' + output);
+
+// Logical AND
+
+var sample = [
+        [[0, 1], 0],
+        [[1, 0], 0],
+        [[1, 1], 1],
+    ],
+    test = [0,0],
+    neuron = new Neuron().learn(sample);
+
+var output = neuron.send(test);
+log(test[0] + ' AND ' + test[1] + ' = ' + output);  
