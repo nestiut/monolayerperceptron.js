@@ -65,12 +65,13 @@ var Neuron = function(weights, threshold, learnRate) {
         }
         weightedSum += this.bias * this.biasWeight;
         
-        // Callback
-        typeof callback === "undefined" || callback(weightedSum);
-        
         // ![]+ Convert 'true' to 1, and 'false' to 0
-        // return ![]+ (weightedSum >= this.threshold);
-        return ![]+ (this.sigmoid(weightedSum) >= this.threshold);
+        var result = ![]+ (this.sigmoid(weightedSum) >= this.threshold)
+        
+        // Callback
+        typeof callback === "undefined" || callback(result);
+        
+        return result;
     };
     
     
