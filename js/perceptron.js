@@ -14,7 +14,35 @@ var log = (function(d) {
 
 // Core
 
-var Neuron = function(weights, threshold, learnRate) {
+
+var Output = function(net, output, sent) {
+    this.net = net;
+    this.value = output;
+    this.sent = sent;
+};
+    
+Output.prototype = {
+    toString: function() {
+        return this.value;
+    },
+    network: function() {
+        return this.net;
+    },
+    send: function(sample) {
+        this.sent = sample || this.sent;
+        this.value = this.net.send(this.sent);
+        return this;
+    },
+    resend: function() {
+        return this.send();
+    },
+    learn: function(result, times) {
+        this.net.learn([[this.sent, ![]+result]], times);
+        return this;
+    }
+};
+
+var Neuron = function(learnRate, threshold, weights) {
     // Force new instance
     if(!(this instanceof arguments.callee)) {
         return new arguments.callee(arguments); 
@@ -39,7 +67,7 @@ var Neuron = function(weights, threshold, learnRate) {
         
         if(this.weights.length === 0) {
             for(var i = 0; i < nbInputs; i++) {
-                this.weights[i] = parseInt( ( Math.random() * 100 ) / 10 );
+                this.weights[i] = parseInt(( Math.random() * 100 ) / 10);
             }    
         }
         this.nbInputs = nbInputs;
@@ -71,15 +99,19 @@ var Neuron = function(weights, threshold, learnRate) {
         // Callback
         typeof callback === "undefined" || callback(result);
         
-        return result;
+        // Using the Output object :
+        // Parameters : the network, the computed output, and the input used
+        return new Output(this, result, inputs);
     };
     
     
-    this.learn = function(data) {
+    this.learn = function(data, times) {
+        times = (times || 1) - 1;
+        
         this.init(data[0][0].length);
         
         for (var i = 0; i < data.length; i++) {
-            currentOutput = this.send(data[i][0]);
+            currentOutput = this.send(data[i][0]).value;
             providedOutput = data[i][1];
             
             for(var j = 0; j < this.nbInputs; j++) {
@@ -87,6 +119,18 @@ var Neuron = function(weights, threshold, learnRate) {
                 this.biasWeight = this.biasWeight + (providedOutput - currentOutput);
             }
         }
+        
+        // learn with the same data a few times
+        times < 1 || this.learn(data, --times);
+        
+        return this;
+    };
+    
+    
+    this.reset = function() {
+        this.weights        = [];
+        this.biasWeight     = 1;
+        this.init();
         
         return this;
     };
@@ -116,10 +160,9 @@ var sample = [
         [[2, 1], 1],
     ],
     test = [5, -5],
-    neuron = new Neuron().learn(sample);
+    output = new Neuron().learn(sample).send(test);
 
-var output = neuron.send(test);
-log('Is ' + test + ' on the right side? ' + !!output);
+log('Is ' + test + ' on the right side? ' + !!output.value);
 
 
 // Canvas graph
@@ -149,8 +192,8 @@ for(var i = 0, len = sample.length; i < len; i++) {
     ctx.fill();
 }
 
-// Test
-ctx.fillStyle = output !== 1 ? "#FF1C0A" : "#00A308";
+// Test point
+ctx.fillStyle = output.value !== 1 ? "#FF1C0A" : "#00A308";
 ctx.beginPath();
 ctx.arc((test[0] +20)*10, (test[1] +20)*10, 2, 0, Math.PI*2, true); 
 ctx.closePath();
@@ -158,26 +201,10 @@ ctx.fill();
 
 // Logical OR
 
-var sample = [
+var output = new Neuron().learn([
         [[0, 0], 0],
-        [[0, 1], 1],
         [[1, 0], 1],
-    ],
-    test = [1, 1],
-    neuron = new Neuron().learn(sample);
+        [[1, 1], 1]
+]).send([0,1]);
 
-var output = neuron.send(test);
-log(test[0] + ' OR ' + test[1] + ' = ' + output);
-
-// Logical AND
-
-var sample = [
-        [[0, 1], 0],
-        [[1, 0], 0],
-        [[1, 1], 1],
-    ],
-    test = [0,0],
-    neuron = new Neuron().learn(sample);
-
-var output = neuron.send(test);
-log(test[0] + ' AND ' + test[1] + ' = ' + output);  
+log(output.sent[0] + ' OR ' + output.sent[1] + ' = ' + output);
