@@ -14,127 +14,137 @@ var log = (function(d) {
 
 // Core
 
+var Neuron = (function() {
 
-var Output = function(net, output, sent) {
-    this.net = net;
-    this.value = output;
-    this.sent = sent;
-};
-    
-Output.prototype = {
-    toString: function() {
-        return this.value;
-    },
-    network: function() {
-        return this.net;
-    },
-    send: function(sample) {
-        this.sent = sample || this.sent;
-        this.value = this.net.send(this.sent);
-        return this;
-    },
-    resend: function() {
-        return this.send();
-    },
-    learn: function(result, times) {
-        this.net.learn([[this.sent, ![]+result]], times);
-        return this;
-    }
-};
-
-var Neuron = function(learnRate, threshold, weights) {
-    // Force new instance
-    if(!(this instanceof arguments.callee)) {
-        return new arguments.callee(arguments); 
-    }
-    
-    
-    this.weights      = weights || [];
-    this.threshold    = threshold || 0.5;
-    this.learnRate    = learnRate || 0.5;
-    this.bias         = 1;
-    this.biasWeight   = 1;
-    this.nbInputs     = 0;
-    this.sigmoid      = function(x) {
-        return 1/ (1 - Math.exp(-1 * x));
-    };
-    
-    
-    this.init = function(nbInputs, callback) {
-        if(this.weights.length !== 0) {
-            return;
-        }
+    // Output object
+    var Output = (function() {
+        var Output = function(net, output, sent) {
+            this.net = net;
+            this.value = output;
+            this.sent = sent;
+        };
         
-        if(this.weights.length === 0) {
-            for(var i = 0; i < nbInputs; i++) {
-                this.weights[i] = parseInt(( Math.random() * 100 ) / 10);
-            }    
-        }
-        this.nbInputs = nbInputs;
-        this.weights.push(this.biasWeight); 
-        
-        // Callback
-        typeof callback === "undefined" || callback(this.weights);
-        
-        // Chaining
-        return this;
-    };
-    
-    
-    this.send = function(inputs, callback) {
-        this.init(inputs.length);
-        
-        inputs = inputs.slice(0, this.nbInputs);
-        
-        // Weighted sum of inputs
-        var weightedSum = 0;
-        for(var i = 0; i < inputs.length; i++) {
-            weightedSum += inputs[i] * this.weights[i];
-        }
-        weightedSum += this.bias * this.biasWeight;
-        
-        // ![]+ Convert 'true' to 1, and 'false' to 0
-        var result = ![]+ (this.sigmoid(weightedSum) >= this.threshold)
-        
-        // Callback
-        typeof callback === "undefined" || callback(result);
-        
-        // Using the Output object :
-        // Parameters : the network, the computed output, and the input used
-        return new Output(this, result, inputs);
-    };
-    
-    
-    this.learn = function(data, times) {
-        times = (times || 1) - 1;
-        
-        this.init(data[0][0].length);
-        
-        for (var i = 0; i < data.length; i++) {
-            currentOutput = this.send(data[i][0]).value;
-            providedOutput = data[i][1];
-            
-            for(var j = 0; j < this.nbInputs; j++) {
-                this.weights[j] += this.learnRate * (providedOutput - currentOutput) * data[i][0][j];
-                this.biasWeight = this.biasWeight + (providedOutput - currentOutput);
+        Output.prototype = {
+            toString: function() {
+                return this.value;
+            },
+            network: function() {
+                return this.net;
+            },
+            send: function(sample) {
+                this.sent = sample || this.sent;
+                this.value = this.net.send(this.sent);
+                return this;
+            },
+            resend: function() {
+                return this.send();
+            },
+            learn: function(result, times) {
+                this.net.learn([[this.sent, ![]+result]], times);
+                return this;
             }
+        };
+        
+        return Output;
+    })();
+
+    // Neuron object
+    var Neuron = function(learnRate, threshold, weights) {
+        // Force new instance
+        if(!(this instanceof arguments.callee)) {
+            return new arguments.callee(arguments); 
         }
         
-        // learn with the same data a few times
-        times < 1 || this.learn(data, --times);
         
-        return this;
+        this.weights      = weights || [];
+        this.threshold    = threshold || 0.5;
+        this.learnRate    = learnRate || 0.5;
+        this.bias         = 1;
+        this.biasWeight   = 1;
+        this.nbInputs     = 0;
+        this.sigmoid      = function(x) {
+            return 1/ (1 - Math.exp(-1 * x));
+        };
+        
+        
+        this.init = function(nbInputs, callback) {
+            if(this.weights.length !== 0) {
+                return;
+            }
+            
+            if(this.weights.length === 0) {
+                for(var i = 0; i < nbInputs; i++) {
+                    this.weights[i] = parseInt(( Math.random() * 100 ) / 10);
+                }    
+            }
+            this.nbInputs = nbInputs;
+            this.weights.push(this.biasWeight); 
+            
+            // Callback
+            typeof callback === "undefined" || callback(this.weights);
+            
+            // Chaining
+            return this;
+        };
+        
+        
+        this.send = function(inputs, callback) {
+            this.init(inputs.length);
+            
+            inputs = inputs.slice(0, this.nbInputs);
+            
+            // Weighted sum of inputs
+            var weightedSum = 0;
+            for(var i = 0; i < inputs.length; i++) {
+                weightedSum += inputs[i] * this.weights[i];
+            }
+            weightedSum += this.bias * this.biasWeight;
+            
+            // ![]+ Convert 'true' to 1, and 'false' to 0
+            var result = ![]+ (this.sigmoid(weightedSum) >= this.threshold)
+            
+            // Callback
+            typeof callback === "undefined" || callback(result);
+            
+            // Using the Output object :
+            // Parameters : the network, the computed output, and the input used
+            return new Output(this, result, inputs);
+        };
+        
+        
+        this.learn = function(data, times) {
+            times = (times || 1) - 1;
+            
+            this.init(data[0][0].length);
+            
+            for (var i = 0; i < data.length; i++) {
+                currentOutput = this.send(data[i][0]).value;
+                providedOutput = data[i][1];
+                
+                for(var j = 0; j < this.nbInputs; j++) {
+                    this.weights[j] += this.learnRate * (providedOutput - currentOutput) * data[i][0][j];
+                    this.biasWeight = this.biasWeight + (providedOutput - currentOutput);
+                }
+            }
+            
+            // learn with the same data a few times
+            times < 1 || this.learn(data, --times);
+            
+            return this;
+        };
+        
+        
+        this.reset = function() {
+            this.weights        = [];
+            this.biasWeight     = 1;
+            this.init();
+            
+            return this;
+        };
     };
     
-    
-    this.reset = function() {
-        this.weights        = [];
-        this.biasWeight     = 1;
-        this.init();
-        
-        return this;
-    };
-};
+    return Neuron;
+})();
 
 // Network test
 
